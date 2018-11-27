@@ -60,6 +60,8 @@
         rotator :: atom()
 }).
 
+-define(GARBAGE_COLLECTION_SECS, 300).
+
 %% @private
 start_link(Filename, MaxBytes, Size, Date, Count, Rotator) ->
     gen_server:start_link({local, ?MODULE}, ?MODULE, [Filename, MaxBytes,
@@ -73,6 +75,7 @@ start(Filename, MaxBytes, Size, Date, Count, Rotator) ->
 %% @private
 init([RelFilename, MaxBytes, Size, Date, Count, Rotator]) ->
     Filename = lager_util:expand_path(RelFilename),
+    schedule_garbage_collection(),
     case Rotator:open_logfile(Filename, false) of
         {ok, {FD, Inode, _}} ->
             schedule_rotation(Date),
@@ -105,6 +108,10 @@ handle_info(rotate, #state{name=Name, count=Count, date=Date, rotator=Rotator} =
     _ = Rotator:rotate_logfile(Name, Count),
     schedule_rotation(Date),
     {noreply, State};
+handle_info(gc, State) ->
+    garbage_collect(),
+    schedule_garbage_collection(),
+    {noreply, State};
 handle_info(_Info, State) ->
     {noreply, State}.
 
@@ -115,6 +122,10 @@ terminate(_Reason, _State) ->
 %% @private
 code_change(_OldVsn, State, _Extra) ->
     {ok, State}.
+
+schedule_garbage_collection() ->
+    erlang:send_after(?GARBAGE_COLLECTION_SECS * 1000, self(), gc),
+    ok.
 
 schedule_rotation(undefined) ->
     ok;

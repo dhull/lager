@@ -1120,7 +1120,12 @@ Example Usage:
 
 3.x Changelog
 -------------
+3.6.7.1 - 27 November 2018
+
+    * Bugfix: Schedule a periodic manual garbage collection.
+
 3.6.7 - 14 October 2018
+
     * Bugfix: fix tracing to work with OTP21 #480
 
 3.6.6 - 24 September 2018
